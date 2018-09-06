@@ -1,0 +1,651 @@
+---
+title: "Introduction to Bayesian Statistics"
+author: "Greg Snow"
+date: "September 6, 2018"
+output: 
+  beamer_presentation:
+    colortheme: seahorse
+    keep_tex: yes
+    template: prsnt.beamer.tex
+#    theme: Berkely
+    pandoc_args: [
+#      "-Varticle:1",
+      "-Vstrikeout:1",
+#      "--verbose",
+      "--slide-level=2"
+    ]
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+library(pander)
+articlemode <- FALSE
+knitr::opts_chunk$set(echo = articlemode, cache=TRUE,
+                      fig.width=4, fig.height=3, dpi=600,
+                      prompt=TRUE, comment = '')
+options(width=50)
+```
+
+# Introduction
+
+## Probability
+
+In Bayesian Statistics, probability represents our uncertainty or lack of knowledge.
+
+## Coin example
+
+Flip a fair coin, look at it, but don't show me.  Ask me what is the probability that it shows heads:
+
+Frequentist
+: Either 100% or 0%, just don't know which
+
+Bayesian
+: 50%
+
+## Card Example
+
+We start with 4 cards, 2 red, 2 black.
+
+\ 
+
+\ 
+
+
+```{r cards1,  out.width="2.5in"}
+include_graphics("CardsFan.png")
+```
+
+## Card Example
+
+The cards are shuffled and one is drawn at random and placed face down on the table.
+
+\ 
+
+\ 
+
+```{r cards2, out.width="1.5in"}
+include_graphics("Cards-one.png")
+```
+
+
+## Card Example
+
+Person A is not shown any cards, person B is shown that one of the remaining cards is Red.
+
+ \ 
+
+ \ 
+
+```{r cards3, out.width="1.5in"}
+include_graphics("Card-Red.png")
+```
+
+## Card Example
+
+Person C is shown that one of the remaining cards is Black.
+
+ \ 
+
+ \ 
+
+```{r cards4, out.width="1.5in"}
+include_graphics("Card-Black.png")
+```
+
+## Card Example
+
+What is the probability that the original card is Red/Black?
+
+ \ 
+
+
+Person A:
+
+: $P(Red) = \frac24 = \frac12$
+
+Person B:
+
+: $P(Red) = \frac13$
+
+Person C:
+
+: $P(Red) = \frac23$
+
+## Bayesian Statistics
+
+* Develop a model of how the data are related to parameters of interest (and nuisance parameters).
+
+* Choose prior distributions for the parameter(s) (Include prior information if any).
+
+* Compute posterior distributions on the parameters using the model and data.
+
+
+## Bayesian Computation
+
+To compute the posterior you need:
+
+* Simple and specific model and priors
+
+  or
+  
+* Complicated math that ranges from very difficult to **impossible**
+
+  or
+
+* A computer and lots of calculations to approximate the math.
+
+
+
+
+## Prior Distribution
+
+A new island in the Pacific has been discovered and it is our job to estimate the mean heights of the Men/Women that live there.  What should our prior on the mean be?
+
+## Prior Distribution
+
+Mean heights range from 56 inches (Bolivia Females) to 73 inches (Dinaric Alps Males) [Wikipedia article].  With world records for individuals of 22 inches and 97 inches.
+
+## Prior Distribution
+
+A Prior Distribution of a Normal with mean 65 inches and standard deviation of 10 inches:
+
+```{r prior1}
+curve(dnorm(x, 65, 10), from=22, to=97, yaxt='n')
+curve(dnorm(x, 65, 10), from=22, to=56, add=TRUE, col='red', type='h', lwd=2)
+curve(dnorm(x, 65, 10), from=73, to=97, add=TRUE, col='red', type='h', lwd=2)
+curve(dnorm(x, 65, 10), from=56, to=73, add=TRUE, col='blue', type='h', lwd=2)
+abline(v=c(56,73))
+mtext(c(56,73), side=3, line=0, at=c(56,73), cex=0.7)
+curve(dnorm(x, 65,10), add=TRUE, lwd=2)
+text(40,0.02, sprintf("%4.1f%%", 100*pnorm(56,65,10)), cex=0.8)
+text(65,0.02, sprintf("%4.1f%%", 100*(pnorm(73,65,10) - pnorm(56,65,10))), col='white', cex=0.8)
+text(90,0.02, sprintf("%4.1f%%", 100*pnorm(73,65,10, lower=FALSE)), cex=0.8)
+```
+
+## Prior Distribution
+
+A shifted and scaled t-distribution with 3 degrees of freedom gives a little more tail area: 
+
+
+```{r prior2}
+dt2 <- function(x, m, s, df) {
+  dt( (x-m)/s, df)
+}
+curve(dt2(x, 65, 10, 3), from=22, to=97, yaxt='n')
+curve(dt2(x, 65, 10, 3), from=22, to=56, add=TRUE, col='red', type='h', lwd=2)
+curve(dt2(x, 65, 10, 3), from=73, to=97, add=TRUE, col='red', type='h', lwd=2)
+curve(dt2(x, 65, 10, 3), from=56, to=73, add=TRUE, col='blue', type='h', lwd=2)
+abline(v=c(56,73))
+mtext(c(56,73), side=3, line=0, at=c(56,73), cex=0.7)
+curve(dt2(x, 65,10, 3), add=TRUE, lwd=2)
+text(40,0.15, sprintf("%4.1f%%", 100*(pt((56-65)/10, 3) - pt((22-65)/10, 3))), cex=0.8)
+text(65,0.15, sprintf("%4.1f%%", 100*(pt((73-65)/10, 3) - pt((56-65)/10, 3))), col='white', cex=0.8)
+text(90,0.15, sprintf("%4.1f%%", 100*(pt((97-65)/10, 3) - pt((73-65)/10, 3))), cex=0.8)
+text(20, 0.25, sprintf("%4.1f%%", 100*pt((22-65)/10, 3)), cex=0.8, adj=0)
+text(100, 0.25, sprintf("%4.1f%%", 100*pt((97-65)/10, 3, lower=FALSE)), adj=1, cex=0.8)
+
+```
+
+
+# Demonstration
+
+## Live Demonstration
+
+One of our deep space probes has discovered an inhabitable planet.  We are tasked with estimating the proportion of the surface covered with Land vs. Water to help prepare our ~~invasion force~~ exploratory teams.
+
+## Live Demonstration
+
+If the globe comes to you, catch it, and look at where your **Left** **Index** finger is touching the globe.  Determine if it is touching Land or Water (if both, or an animal, or a symbol, then figure out which is most appropriate).  Yell out "Land" or "Water", then give the globe a spin and toss it (gently) to someone else.
+
+## Live Demonstration
+
+Do Demo
+
+# Examples
+
+## Compare to T-test
+
+10/1,000 samples of heights of men/women from our island (actually from the NHANES data).
+
+
+
+
+```{r height, include=FALSE}
+library(NHANES)
+
+set.seed(20190619)
+m10   <- sample( NHANES$Height[NHANES$Gender=='male' & NHANES$Age > 20], 10) / 2.54
+m1000 <- sample( NHANES$Height[NHANES$Gender=='male' & NHANES$Age > 20 & !is.na(NHANES$Height)], 1000) / 2.54
+f10   <- sample( NHANES$Height[NHANES$Gender=='female' & NHANES$Age > 20], 10) / 2.54
+f1000 <- sample( NHANES$Height[NHANES$Gender=='female' & NHANES$Age > 20 & !is.na(NHANES$Height)], 1000) / 2.54
+
+m10 <- round(2*m10)/2
+m1000 <- round(2*m1000)/2
+f10 <- round(2*f10)/2
+f1000 <- round(2*f1000)/2
+
+mt10 <- t.test(m10)
+ft10 <- t.test(f10)
+mft10 <- t.test(m10, f10)
+
+mt1000 <- t.test(m1000)
+ft1000 <- t.test(f1000)
+mft1000 <- t.test(m1000, f1000)
+
+library(rstan)
+
+set.seed(20190619)
+m10c   <- sample( NHANES$Height[NHANES$Gender=='male' & NHANES$Age > 20], 10)
+
+
+t.test(m10c)
+
+stanmod <- stan_model(model_code="
+data {
+  int<lower=0> N1;
+  int<lower=0> N2;
+  real x[N1];
+  real y[N2];
+  real pm;
+  real<lower=0> ps;
+}                  
+parameters{
+  real mx;
+  real<lower=0> sx;
+  real my;
+  real<lower=0> sy;
+}
+model{
+  x ~ normal(mx, sx);
+  y ~ normal(my, sy);
+  mx ~ normal(pm,ps);
+  my ~ normal(pm,ps);
+}
+generated quantities {
+  real d;
+  real r;
+  d = mx - my;
+  r = mx/my;
+}
+")
+
+standat1 <- list(N1=10, N2=10, x=m10, y=f10, pm=65, ps=10)
+standat2 <- list(N1=10, N2=10, x=m10c, y=f10*2.54, pm=65, ps=10)
+standat3 <- list(N1=1000, N2=1000, x=m1000, y=f1000, pm=65, ps=10)
+
+out1 <- sampling(stanmod, data=standat1, cores=4, iter=10000)
+out2 <- sampling(stanmod, data=standat2, cores=4, iter=10000)
+out3 <- sampling(stanmod, data=standat3, cores=4, iter=10000)
+
+mon1 <- monitor(out1)
+mon2 <- monitor(out2)
+mon3 <- monitor(out3)
+
+```
+
+
+
+n         | Males            | Females          | Difference      
+----------|------------------|------------------|---------------
+n=10      |                  |                  |               
+T-test    | 70.2 (67.6-72.8) | 62.7 (60.1-65.2) | 7.6 (4.2-10.9)
+Bayes     | 70.1 (67.4-72.8) | 62.7 (60.1-65.4) | 7.4 (3.6-11.2)
+n=1,000   |                  |                  |               
+T-test    | 69.2 (69.0-69.4) | 63.6 (63.4-63.7) | 5.6 (5.4-5.9)
+Bayes     | 69.2 (69.0-69.4) | 63.6 (63.4-63.7) | 5.6 (5.4-5.9)  
+
+## Posterior Distribution
+
+```{r height2}
+stan_dens(out1, pars=c('mx','my','d','r'))
+
+
+```
+
+
+## Posterior Predictive distribution
+
+```{r heighyppd}
+s1 <- extract(out1)
+mpp <- rnorm(20000, s1$mx, s1$sx)
+fpp <- rnorm(20000, s1$my, s1$sy)
+
+hist(mpp, main="Male", xlab="Height")
+abline(v=jitter(m10), col='#0000ff77')
+
+```
+
+## Posterior Predictive distribution
+
+```{r heightppd2}
+hist(fpp, main="Female", xlab='Height')
+abline(v=jitter(f10), col='#ff000077')
+```
+
+## Posterior Predictive distribution
+
+```{r heighyppd3}
+s2 <- extract(out3)
+mpp <- rnorm(20000, s2$mx, s2$sx)
+fpp <- rnorm(20000, s2$my, s2$sy)
+
+hist(mpp, main="Male", xlab="Height")
+abline(v=jitter(m1000), col='#0000ff22')
+
+```
+
+## Posterior Predictive distribution
+
+```{r heightppd4}
+hist(fpp, main="Female", xlab='Height')
+abline(v=jitter(f1000), col='#ff000022')
+```
+
+
+## Additional Plots
+
+```{r stanplot}
+stan_plot(out1)
+```
+
+## Additional Plots
+
+```{r traceplot}
+stan_trace(out1)
+```
+
+## Additional Output
+
+```{r output}
+print(out1)
+```
+
+
+## Wrong Scale
+
+What if we accidentally used height in cm, while prior is in inches?
+
+ \ 
+
+n=10    | Male   
+--------|---------------------
+T-Test  | 178.4 (172.0-184.8)
+Bayes   |  73.7 (53.0-94.7)
+
+
+ \ 
+
+Bayes estimate of SD = 120, SD of data = 3.6
+
+
+## Posterior Predictive distribution
+
+```{r heighyppd5}
+s3 <- extract(out2)
+mpp <- rnorm(20000, s3$mx, s3$sx)
+
+
+hist(mpp, main="Male", xlab="Height")
+abline(v=jitter(m1000), col='#0000ff22')
+
+```
+
+## Unequal Variances
+
+```{r unequal}
+outmat <- as.matrix(out3)
+r <- outmat[,'sx']^2/(outmat[,'sy']^2)
+hist(r, main='Ratio of Variances', xlab='ratio')
+abline(v=quantile(r, c(0.025, 0.975)), col='blue')
+abline(v=1, col='green')
+```
+
+## Non-normal Likelihood
+
+```{r nonnormal, include=FALSE}
+library(NHANES)
+
+mw1000 <- round(sample( NHANES$Weight[NHANES$Gender=='male' & NHANES$Age > 20 & !is.na(NHANES$Weight)], 1000)*2.2)
+
+stanmod4 <- stan_model(model_code="
+data {
+  int<lower=0> N;
+  real x[N];
+}                  
+parameters{
+  real<lower=0> alpha;
+  real<lower=0> beta;
+}
+model{
+  x ~ gamma(alpha, beta);
+  alpha ~ cauchy(0,2.5);
+  beta ~ cauchy(0,2.5);
+}
+generated quantities {
+  real mn;
+  mn = alpha/beta;
+}
+")
+
+standat4 <- list(N=1000, x=mw1000)
+
+out4 <- sampling(stanmod4, data=standat4, cores=4, iter=10000)
+
+mon4 <- monitor(out4)
+```
+
+```{r nonnorm2}
+options(scipen=10)
+mon4
+```
+
+## Non-normal Posterior Prediction
+
+```{r nonnorm3}
+tmp <- extract(out4)
+x <- rgamma(length(tmp$alpha), tmp$alpha, tmp$beta)
+hist(x, prob=TRUE, main='', xlab='Weight (predicted)')
+lines(density(mw1000), col='blue')
+```
+
+## Logistic Regression
+
+```{r logistic, include=FALSE}
+stanmod5 <- stan_model(model_code="
+data {
+  int<lower=1> N;
+  int<lower=1> P;
+  int<lower=0> y[N];
+  int<lower=1> n[N];
+  matrix[N, P] x;
+}
+parameters {
+  real beta0;
+  vector[P] beta;
+}
+model {
+  for ( i in 1:P ) {
+    beta[i] ~ normal(0, 5);
+  }
+  beta0 ~ normal(0,5);
+  y ~ binomial_logit(n, beta0 + x * beta);
+}
+")
+
+standat5 <- list(N = nrow(esoph), 
+                 P = 3, y = esoph$ncases,
+                 n = esoph$ncases + esoph$ncontrols,
+                 x = cbind(
+                   as.numeric(esoph$agegp),
+                   as.numeric(esoph$alcgp),
+                   as.numeric(esoph$tobgp)
+                 ))
+
+
+out5 <- sampling(stanmod5, data=standat5, cores=4, iter=10000)
+
+mon5 <- monitor(out5)
+```
+
+```{r logistic2}
+options(scipen=10)
+print(mon5, digits=3)
+```
+
+
+## Logistic Regression
+
+```{r logistic3}
+stan_dens(out5)
+```
+
+
+## Muliple Comparisons
+
+Simulate 10 groups with n=30, mean=100, sd=5 and look at all pairwise comparisons.  Look at biggest difference.  Compare to Bayesian Hierarchical model.
+
+ \ 
+
+
+```{r mult, include=FALSE}
+library(multcomp)
+set.seed(20180619)
+mydat <- data.frame(x=rnorm(10*30, 100, 5), g=rep(LETTERS[1:10], each=30))
+fit1 <- lm(x ~ 0+g, data=mydat)
+t.test(mydat$x[mydat$g=='E'], mydat$x[mydat$g=="H"])
+
+stanmod <- stan_model(model_code="
+data {
+  int<lower=0> N;
+  real x[N];
+  int  g[N];
+  int<lower=0> K;
+}                  
+parameters{
+  real mu[K];
+  real<lower=0> sig;
+  real hmu;
+  real<lower=0> hsig;
+}
+model{
+  for(i in 1:N)
+    x[i] ~ normal(mu[g[i]], sig);
+  for(i in 1:K)
+    mu[i] ~ normal(hmu, hsig);
+  sig ~ normal(0,10);
+  hmu ~ normal(0, 200);
+  hsig ~ normal(0,10);
+}
+")
+
+standat <- list(N=nrow(mydat), x=mydat$x, g=as.integer(mydat$g), K=10)
+
+out <- sampling(stanmod, data=standat, cores=4, iter=10000)
+
+mon <- monitor(out)
+
+s <- extract(out)
+
+tmp <- s$mu[,5] - s$mu[,8]
+mean(tmp)
+quantile(tmp, c(0.025, 0.975))
+
+mean(mydat$x[mydat$g=="E"])
+mean(mydat)
+```
+
+n=30        | Biggest Difference
+------------|-----------------------------------
+Uncorrected | 102.51 - 98.82 = 3.69 (1.07-6.30)
+Tukey       | 102.51 - 98.82 = 3.69 (-0.35-7.72)
+Bayes Hier  | 101.27 - 99.83 = 1.44 (-0.25-4.03)
+
+## Partial Pooling
+
+We are looking at the success rate for a particular procedure at 10 different clinics (whose success rates probably vary).
+
+```{r pool, include=FALSE}
+set.seed(20180619)
+n <- round(10^(seq(1, 3, length.out=10)))
+prop <- rbeta(10, 9, 15)
+x <- rbinom(10, n, prop)
+
+stanmod <- stan_model(model_code = "
+data{
+  int<lower=0> N;
+  int<lower=0> n[N];
+  int<lower=0> x[N];
+}                   
+parameters {
+  real<lower=0, upper=1> p[N];
+  real<lower=0> alpha;
+  real<lower=0> beta;
+}
+model {
+  for(i in 1:N) {
+    x[i] ~ binomial(n[i], p[i]);
+    p[i] ~ beta(alpha, beta);
+  }
+}
+")
+
+standat <- list(N=10, n=n, x=x)
+
+out <- sampling(stanmod, data=standat, cores=4, iter=10000)
+mon <- monitor(out)
+
+p.ob <- x/n
+```
+
+```{r pool2}
+matplot(1:10, cbind(p.ob, mon[1:10,1]), type='n',
+        xlab='Clinic', ylab='Prop. Sccs')
+segments(x0=1:10, y0=p.ob, y1=mon[1:10,1])
+points(1:10, p.ob)
+points(1:10, mon[1:10,1], pch=16)
+mtext(side=3, line=0.5, at=1:10, n, cex=0.5)
+abline(h=sum(x)/sum(n), col='green')
+abline(h=mon[11,1]/(mon[11,1]+mon[12,1]), col='blue')
+```
+
+
+# Next
+
+## Advantages / Disadvantages
+
+* Flexibility
+
+* Incorporating prior information
+
+* Using different distributions
+
+* Requires more thought
+
+* Not as standard (more explanation/justification)
+
+* Longer analysis time (sometimes shorter)
+
+## Want to Learn More
+
+* The Theory That Would Not Die: How Bayes' Rule Cracked the Enigma Code, Hunted Down Russian Submarines, and Emerged Triumphant from Two Centuries of Controversy by Sharon Bertsch McGrayne
+
+ \ 
+
+* Statistical Rethinking by Richard McElreath  https://xcelab.net/rm/statistical-rethinking/
+
+## R packages
+
+* Bayesian Task View on CRAN
+
+* rethinking -- package to accompany the book Stastical Rethinking
+
+* BRUGS, R2WinBUGS -- Interface packages to OpenBUGS and WinBUGS
+
+* rstan -- Interface with Stan program (compiles code to C++)
+
+* nimble -- R package to create/compile/run C++
+
+* brms, rstanarm -- common models and interfaces, uses rstan to do the computations
+
+* loo -- Leave One Out cross-validation for Bayesian models
+
